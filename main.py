@@ -9,7 +9,7 @@ import telebot
 from telebot import types
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("arevik_shop")
+log = logging.getLogger("chocolateria_esti")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 if not BOT_TOKEN:
@@ -202,14 +202,14 @@ def cmd_start(message: types.Message):
     if not BASE_URL:
         bot.send_message(
             message.chat.id,
-            "AREVIK SHOP: мини-апп ещё не сконфигурирован (не задан WEBHOOK_URL)."
+            "chocolateria.esti: мини-апп ещё не сконфигурирован (не задан WEBHOOK_URL)."
         )
         return
 
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(
         types.InlineKeyboardButton(
-            text="Открыть AREVIK SHOP",
+            text="🍫 Открыть chocolateria.esti",
             web_app=types.WebAppInfo(url=BASE_URL + "/")
         )
     )
@@ -225,10 +225,14 @@ def cmd_start(message: types.Message):
 
     bot.send_message(
         message.chat.id,
-        "AREVIK SHOP — premium collection.\n\n"
-        "Нажмите кнопку ниже, чтобы открыть каталог.",
+        "🍫 *chocolateria.esti — шоколадные наборы*\n\n"
+        "Добро пожаловать в chocolateria.esti! Вкусные и красивые шоколадные наборы "
+        "для себя и знакомых: дубайский шоколад, конфеты, батончики и не только.\n\n"
+        "Нажмите кнопку ниже, чтобы открыть каталог, выбрать набор и оформить заказ.",
         reply_markup=keyboard,
+        parse_mode="Markdown",
     )
+
 
 
 @bot.message_handler(func=lambda m: True, content_types=["text"])
@@ -241,6 +245,11 @@ def fallback(message: types.Message):
 @app.route("/", methods=["GET"])
 def index():
     return send_from_directory(APP_DIR, "index.html")
+
+
+@app.route("/logo.svg", methods=["GET"])
+def logo():
+    return send_from_directory(APP_DIR, "logo.svg")
 
 
 @app.route("/products.json", methods=["GET"])
@@ -312,7 +321,7 @@ def create_order():
         save_promos(promos)
 
     items_lines = "\n".join(
-        f"· {i.get('name','—')} (размер {i.get('size') or '—'}) × {i.get('qty', 1)}"
+        f"· {i.get('name','—')} (вариант {i.get('size') or '—'}) × {i.get('qty', 1)}"
         for i in items
     )
 
@@ -328,7 +337,7 @@ def create_order():
             bot.send_message(
                 customer_chat_id,
                 "✅ Заказ оформлен!\n\n"
-                f"Номер заказа: DTM-{new_id}\n"
+                f"Номер заказа: CE-{new_id}\n"
                 f"{items_lines}\n\n"
                 f"{discount_line}"
                 f"Итого: {fmt_price(total)}\n\n"
@@ -339,7 +348,7 @@ def create_order():
             log.warning("Не удалось отправить подтверждение покупателю: %s", e)
 
     admin_text = (
-        f"🛒 Новый заказ DTM-{new_id}\n\n"
+        f"🛒 Новый заказ CE-{new_id}\n\n"
         f"Клиент: {name}\n"
         f"Телефон: {phone}\n"
         + (f"Telegram: @{customer_username}\n" if customer_username else "")
@@ -428,7 +437,7 @@ def customer_cancel_order(oid):
 
     for admin_id in ADMIN_CHAT_IDS:
         try:
-            bot.send_message(admin_id, f"❌ Клиент отменил заказ DTM-{oid}")
+            bot.send_message(admin_id, f"❌ Клиент отменил заказ CE-{oid}")
         except Exception as e:
             log.warning("Не удалось уведомить администратора %s: %s", admin_id, e)
 
@@ -548,7 +557,7 @@ def admin_create_product():
         "price": price,
         "old_price": sanitize_old_price(data.get("old_price")),
         "badge": sanitize_badge(data.get("badge")),
-        "sizes": sizes or ["One size"],
+        "sizes": sizes or ["Стандарт"],
         "swatch": int(data.get("swatch") or 0) % 6,
         "desc": (data.get("desc") or "").strip(),
         "images": images,
@@ -770,7 +779,7 @@ def admin_message_customer(oid):
     try:
         bot.send_message(
             chat_id,
-            f"💬 Сообщение от AREVIK SHOP по заказу DTM-{oid}:\n\n{text}"
+            f"💬 Сообщение от chocolateria.esti по заказу CE-{oid}:\n\n{text}"
         )
     except Exception as e:
         abort(400, description=f"Не удалось отправить сообщение: {e}")
@@ -813,7 +822,7 @@ def admin_message_question(qid):
     try:
         bot.send_message(
             chat_id,
-            f"💬 Ответ от AREVIK SHOP по товару «{q.get('product_name','')}»:\n\n{text}"
+            f"💬 Ответ от chocolateria.esti по товару «{q.get('product_name','')}»:\n\n{text}"
         )
     except Exception as e:
         abort(400, description=f"Не удалось отправить ответ: {e}")
